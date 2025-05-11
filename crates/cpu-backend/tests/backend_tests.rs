@@ -1,18 +1,8 @@
 use backend_api::Backend;
-use core::{DType, Tensor};
 use cpu_backend::CpuBackend;
+use llm_core::{DType, Tensor};
 
-/// Helper: build an (n×n) identity matrix
-fn identity(n: usize) -> Tensor {
-    let mut t = Tensor::new(vec![n, n], DType::F32);
-    let data = t.as_f32_mut();
-    for i in 0..n {
-        data[i * n + i] = 1.0;
-    }
-    t
-}
-
-/// Helper: build a 2×2 test matrix A = [[1,2],[3,4]]
+/// Same 2×2 helper
 fn test_matrices() -> (Tensor, Tensor) {
     let mut a = Tensor::new(vec![2, 2], DType::F32);
     let mut b = Tensor::new(vec![2, 2], DType::F32);
@@ -22,22 +12,14 @@ fn test_matrices() -> (Tensor, Tensor) {
 }
 
 #[test]
-fn matmul_identity_identity() {
-    let cpu = CpuBackend::new();
-    let i4 = identity(4);
-    let out = cpu.matmul(&i4, &i4).expect("matmul");
-    assert_eq!(out.shape, vec![4, 4]);
-    assert_eq!(out.as_f32(), i4.as_f32());
-}
-
-#[test]
-fn matmul_known_2x2() {
-    let cpu = CpuBackend::new();
+fn matmul_wgpu_2x2() {
     let (a, b) = test_matrices();
-    // A × B = [[1*5+2*7, 1*6+2*8], [3*5+4*7, 3*6+4*8]]
+    let cpu = CpuBackend::new();
+    let c = cpu.matmul(&a, &b).expect("matmul");
+
+    // Expected [[19,22],[43,50]]
     let expected = [19.0, 22.0, 43.0, 50.0];
-    let c = cpu.matmul(&a, &b).expect("matmul 2x2");
-    for (out, &exp) in c.as_f32().iter().zip(&expected) {
+    for (&out, &exp) in c.as_f32().iter().zip(&expected) {
         assert!((out - exp).abs() < 1e-6);
     }
 }
@@ -50,11 +32,22 @@ fn softmax_row() {
     t.as_f32_mut().copy_from_slice(&[0.0, 1.0, 2.0]);
     let out = cpu.softmax(&t).expect("softmax");
     let vals = out.as_f32();
-    // Manually compute softmax
-    let exps: Vec<f32> = vals.iter().map(|&x| x.exp()).collect();
+
+    // Compute expected softmax of [0,1,2]
+    let input = &[0.0f32, 1.0, 2.0];
+    let max = input.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+    let exps: Vec<f32> = input.iter().map(|&x| (x - max).exp()).collect();
     let sum: f32 = exps.iter().sum();
-    for &v in vals {
-        let expected = v.exp() / sum;
-        assert!((v - expected).abs() < 1e-6);
+    let expected: Vec<f32> = exps.iter().map(|&e| e / sum).collect();
+
+    // Compare each output element
+    for i in 0..3 {
+        assert!(
+            (vals[i] - expected[i]).abs() < 1e-6,
+            "softmax[{}] = {}, but expected {}",
+            i,
+            vals[i],
+            expected[i]
+        );
     }
 }

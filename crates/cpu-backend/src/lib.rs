@@ -26,7 +26,7 @@ impl Backend for CpuBackend {
 
         let mut out = Tensor::new(vec![m, n], DType::F32);
         let a_data = a.as_f32();
-        let b_data = b.as_f32_mut(); // we’ll index it by row*cols + col
+        let b_data = b.as_f32(); // read-only access
         let out_data = out.as_f32_mut();
 
         // Parallelize over rows of output
@@ -47,22 +47,24 @@ impl Backend for CpuBackend {
         if input.dtype != DType::F32 || input.shape.len() != 2 {
             return Err(BackendError::TypeNotSupported);
         }
-        let (batch, dim) = (input.shape[0], input.shape[1]);
+        let dim = input.shape[1];
         let data = input.as_f32();
         let mut out = Tensor::new(input.shape.clone(), DType::F32);
-        let out_data = out.as_f32_mut();
 
-        // Compute softmax per row
-        (0..batch).into_par_iter().for_each(|i| {
-            let start = i * dim;
-            let slice = &data[start..start + dim];
-            let max = slice.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-            let exps: Vec<f32> = slice.iter().map(|&x| (x - max).exp()).collect();
-            let sum: f32 = exps.iter().sum();
-            for j in 0..dim {
-                out_data[start + j] = exps[j] / sum;
-            }
-        });
+        // Process each row in parallel, writing directly into chunks of out.data
+        out.as_f32_mut()
+            .par_chunks_mut(dim)
+            .enumerate()
+            .for_each(|(i, row)| {
+                let start = i * dim;
+                let slice = &data[start..start + dim];
+                let max = slice.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+                let exps: Vec<f32> = slice.iter().map(|&x| (x - max).exp()).collect();
+                let sum: f32 = exps.iter().sum();
+                for j in 0..dim {
+                    row[j] = exps[j] / sum;
+                }
+            });
 
         Ok(out)
     }
@@ -99,9 +101,10 @@ impl Backend for CpuBackend {
 }
 
 #[cfg(test)]
+#[cfg(test)]
 mod tests {
     use super::*;
-    use core::{DType, Tensor};
+    use llm_core::{DType, Tensor};
 
     fn make_identity(n: usize) -> Tensor {
         let mut t = Tensor::new(vec![n, n], DType::F32);
@@ -118,19 +121,16 @@ mod tests {
         let a = make_identity(4);
         let b = make_identity(4);
         let c = cpu.matmul(&a, &b).unwrap();
-        // identity × identity = identity
         assert_eq!(c.as_f32(), a.as_f32());
     }
 
     #[test]
     fn test_softmax_basic() {
         let cpu = CpuBackend::new();
-        // 1×3 tensor [[0.0, 1.0, 2.0]]
         let mut t = Tensor::new(vec![1, 3], DType::F32);
         t.as_f32_mut().copy_from_slice(&[0.0, 1.0, 2.0]);
         let out = cpu.softmax(&t).unwrap();
         let vals = out.as_f32();
-        // softmax([0,1,2]) = [e^0, e^1, e^2] / sum
         let sum = vals.iter().sum::<f32>();
         for &v in vals {
             assert!((v / sum - (v / sum)).abs() < 1e-6);

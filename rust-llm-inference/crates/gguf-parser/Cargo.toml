@@ -1,0 +1,11 @@
+[package]
+name = "gguf-parser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+core = { path = "../core" }
+thiserror = "1.0"
+# We might need a GGUF library or implement parsing from scratch.
+# For now, no external GGUF-specific deps.
+# byteorder = "1" # If reading binary data manually 

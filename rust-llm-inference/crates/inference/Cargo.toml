@@ -1,0 +1,14 @@
+[package]
+name = "inference"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+core = { path = "../core" }
+gguf-parser = { path = "../gguf-parser" }
+backend-api = { path = "../backend-api" }
+cpu-backend = { path = "../cpu-backend" }
+wgpu-backend = { path = "../wgpu-backend" }
+tokenizer = { path = "../tokenizer" }
+thiserror = "1.0"
+# log = "0.4" 

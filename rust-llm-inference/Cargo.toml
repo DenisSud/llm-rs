@@ -1,0 +1,16 @@
+[workspace]
+members = [
+    "crates/core",
+    "crates/gguf-parser",
+    "crates/backend-api",
+    "crates/cpu-backend",
+    "crates/wgpu-backend",
+    "crates/tokenizer",
+    "crates/inference",
+    "crates/cli"
+]
+
+[workspace.dependencies]
+# Common dependencies can be listed here if needed later
+# log = "0.4"
+# thiserror = "1.0" 

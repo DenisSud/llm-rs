@@ -1,0 +1,11 @@
+[package]
+name = "cpu-backend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+core = { path = "../core" }
+backend-api = { path = "../backend-api" }
+thiserror = "1.0"
+# rayon = "1.5" # For parallelization
+# ndarray = "0.15" # For easier matrix ops, potentially with BLAS 

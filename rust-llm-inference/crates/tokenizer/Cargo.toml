@@ -1,0 +1,8 @@
+[package]
+name = "tokenizer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+thiserror = "1.0"
+# Potentially: tokenizers = "0.15" # From Hugging Face, if we use it 

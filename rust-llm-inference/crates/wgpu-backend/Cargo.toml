@@ -1,0 +1,11 @@
+[package]
+name = "wgpu-backend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+core = { path = "../core" }
+backend-api = { path = "../backend-api" }
+thiserror = "1.0"
+# wgpu = "0.19" # Or your targeted wgpu version
+# futures = "0.3" # For await on poll 

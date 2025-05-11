@@ -81,9 +81,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "assertion failed")]
+    #[should_panic(expected = "left: I8")]
     fn test_as_f32_wrong_dtype() {
         let t = Tensor::new(vec![2, 2], DType::I8);
-        let _ = t.as_f32(); // should panic because dtype!=F32
+        let _ = t.as_f32(); // should panic because dtype != F32
     }
 }

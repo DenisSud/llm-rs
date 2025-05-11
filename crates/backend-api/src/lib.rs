@@ -1,7 +1,8 @@
 // >>> crates/backend-api/src/lib.rs <<<
 //! backend-api: Defines Backend trait for tensor operations
 
-use llm_core::{DType, Tensor};
+use llm_core::DType;
+use llm_core::Tensor;
 use thiserror::Error;
 
 /// Errors returned by compute backends
